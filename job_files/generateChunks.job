@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name=PixelSplatRun
+#SBATCH --job-name=UseLocalPython
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
-#SBATCH --time=00:20:00
+#SBATCH --time=00:15:00
 #SBATCH --output=slurm_output_%A.out
 
 module purge
@@ -13,9 +13,8 @@ module load 2022
 module load CUDA/11.8.0
 module load GCC/11.3.0
 
-# cd $HOME/pixelsplat/
-
+python3 -m venv venvOld
 source venvOld/bin/activate
 
-# run script
-srun python -u -m src.main +experiment=re10k trainer.val_check_interval=1 data_loader.train.batch_size=4
+srun python -u chunk_scenes.py
+srun python -u generate_index.py
