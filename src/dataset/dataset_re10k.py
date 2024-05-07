@@ -128,15 +128,15 @@ class DatasetRE10k(IterableDataset):
                     continue
 
                 # Skip the example if the images don't have the right shape.
-                context_image_invalid = context_images.shape[1:] != (3, 360, 640)
-                target_image_invalid = target_images.shape[1:] != (3, 360, 640)
-                if context_image_invalid or target_image_invalid:
-                    print(
-                        f"Skipped bad example {example['key']}. Context shape was "
-                        f"{context_images.shape} and target shape was "
-                        f"{target_images.shape}."
-                    )
-                    continue
+                # context_image_invalid = context_images.shape[1:] != (3, 360, 640)
+                # target_image_invalid = target_images.shape[1:] != (3, 360, 640)
+                # if context_image_invalid or target_image_invalid:
+                #     print(
+                #         f"Skipped bad example {example['key']}. Context shape was "
+                #         f"{context_images.shape} and target shape was "
+                #         f"{target_images.shape}."
+                #     )
+                #     continue
 
                 # Resize the world to make the baseline 1.
                 context_extrinsics = extrinsics[context_indices]
