@@ -5,7 +5,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal
 
-import numpy as np
 import torch
 import torchvision.transforms as tf
 from einops import rearrange, repeat
@@ -120,24 +119,11 @@ class DatasetRE10k(IterableDataset):
                     context_images = [
                         example["images"][index.item()] for index in context_indices
                     ]
+                    context_images = self.convert_images(context_images)
                     target_images = [
                         example["images"][index.item()] for index in target_indices
                     ]
-
-                    context_images = self.convert_images(context_images)
                     target_images = self.convert_images(target_images)
-
-                    if "objects" in example:
-                        context_object_masks = [
-                            example["objects"][index.item()] for index in context_indices
-                        ]
-                        target_object_masks = [
-                            example["objects"][index.item()] for index in target_indices
-                        ]
-
-                        context_object_masks = self.convert_images(context_object_masks)
-                        target_object_masks = self.convert_images(target_object_masks)
-
                 except IndexError:
                     continue
 
@@ -186,10 +172,6 @@ class DatasetRE10k(IterableDataset):
                     },
                     "scene": scene,
                 }
-                if "objects" in example:
-                    example["context"]["objects"] = context_object_masks
-                    example["target"]["objects"] = target_object_masks
-
                 if self.stage == "train" and self.cfg.augment:
                     example = apply_augmentation_shim(example)
                 yield apply_crop_shim(example, tuple(self.cfg.image_shape))
@@ -226,15 +208,6 @@ class DatasetRE10k(IterableDataset):
             image = Image.open(BytesIO(image.numpy().tobytes()))
             torch_images.append(self.to_tensor(image))
         return torch.stack(torch_images)
-
-    def convert_masks(self, masks):
-        torch_masks = []
-        for mask in masks:
-            mask = Image.open(BytesIO(mask.numpy().tobytes()))
-            # Convert mask to a tensor: assumes that the mask is grayscale (1 channel)
-            mask_tensor = torch.tensor(np.array(mask), dtype=torch.int64)  # Use int64 for categorical data
-            torch_masks.append(mask_tensor.unsqueeze(0))  # Add a channel dimension if needed
-        return torch.stack(torch_masks)
 
     def get_bound(
         self,

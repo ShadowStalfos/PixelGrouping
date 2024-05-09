@@ -14,16 +14,11 @@ def reflect_extrinsics(
 
 
 def reflect_views(views: AnyViews) -> AnyViews:
-    reflected_views = {
+    return {
         **views,
-        "image": views["image"].flip(-1),  # Reflect the image horizontally
+        "image": views["image"].flip(-1),
         "extrinsics": reflect_extrinsics(views["extrinsics"]),
     }
-    if "object" in views:
-        # Assuming the mask is also a tensor image that can be flipped in the same way
-        reflected_views["object"] = views["object"].flip(-1)  # Reflect the object mask horizontally
-    return reflected_views
-
 
 
 def apply_augmentation_shim(
