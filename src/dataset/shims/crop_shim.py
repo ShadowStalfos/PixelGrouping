@@ -4,7 +4,8 @@ from einops import rearrange
 from jaxtyping import Float
 from PIL import Image
 from torch import Tensor
-
+import torch
+import torchvision.transforms.functional as F
 from ..types import AnyExample, AnyViews
 
 
@@ -47,7 +48,6 @@ def center_crop(
 
     return images, intrinsics
 
-
 def rescale_and_crop(
     images: Float[Tensor, "*#batch c h w"],
     intrinsics: Float[Tensor, "*#batch 3 3"],
@@ -74,20 +74,66 @@ def rescale_and_crop(
 
     return center_crop(images, intrinsics, shape)
 
+def center_crop_masks(
+    masks: torch.Tensor,  # Expected to be an integer tensor
+    shape: tuple[int, int],
+) -> torch.Tensor:
+    *_, h_in, w_in = masks.shape
+    h_out, w_out = shape
+    row = (h_in - h_out) // 2
+    col = (w_in - w_out) // 2
+
+    # Perform the cropping operation
+    cropped_masks = masks[..., :, row : row + h_out, col : col + w_out]
+
+    return cropped_masks
+
+def rescale_masks(masks: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+    """
+    Rescale a batch of masks using nearest neighbor interpolation.
+
+    Args:
+        masks (torch.Tensor): The batch of masks tensors to rescale.
+        shape (tuple[int, int]): The target shape (height, width).
+
+    Returns:
+        torch.Tensor: The resized batch of mask tensors.
+    """
+    # Check if masks already include a batch dimension and adjust if not
+    if masks.dim() == 2:  # No batch, single mask without channel
+        masks = masks.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimension
+    elif masks.dim() == 3:  # No batch, but masks may already have a channel dimension
+        masks = masks.unsqueeze(1)  # Add batch dimension
+
+    # Resize using nearest neighbor interpolation to preserve label integrity
+    resized_masks = F.resize(masks, list(shape), interpolation=F.InterpolationMode.NEAREST)
+
+    return resized_masks
 
 def apply_crop_shim_to_views(views: AnyViews, shape: tuple[int, int]) -> AnyViews:
     images, intrinsics = rescale_and_crop(views["image"], views["intrinsics"], shape)
-    return {
+    updated_views = {
         **views,
         "image": images,
         "intrinsics": intrinsics,
     }
+    if "objects" in views:
+        # Rescale the masks to the desired shape using nearest neighbor interpolation
+        masks = rescale_masks(views["objects"], shape)
+
+        # Perform a center crop on the resized masks
+        masks = center_crop_masks(masks, shape)
+
+        # Update the views dictionary with the processed masks
+        updated_views["objects"] = masks
+    return updated_views
 
 
 def apply_crop_shim(example: AnyExample, shape: tuple[int, int]) -> AnyExample:
-    """Crop images in the example."""
+    """Crop images and masks in the example."""
     return {
         **example,
         "context": apply_crop_shim_to_views(example["context"], shape),
         "target": apply_crop_shim_to_views(example["target"], shape),
     }
+
