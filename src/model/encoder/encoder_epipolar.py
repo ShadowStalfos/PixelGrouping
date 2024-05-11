@@ -85,8 +85,9 @@ class EncoderEpipolar(Encoder[EncoderEpipolarCfg]):
         self.to_gaussians = nn.Sequential(
             nn.ReLU(),
             nn.Linear(
+                # THE BENINGING ^_^
                 cfg.d_feature,
-                cfg.num_surfaces * (2 + self.gaussian_adapter.d_in),
+                cfg.num_surfaces * (2 + self.gaussian_adapter.d_in + self.cfg.num_classes),
             ),
         )
         self.high_resolution_skip = nn.Sequential(
@@ -210,6 +211,7 @@ class EncoderEpipolar(Encoder[EncoderEpipolarCfg]):
                 opacity_multiplier * gaussians.opacities,
                 "b v r srf spp -> b (v r srf spp)",
             ),
+            gaussians.class_,
         )
 
     def get_data_shim(self) -> DataShim:

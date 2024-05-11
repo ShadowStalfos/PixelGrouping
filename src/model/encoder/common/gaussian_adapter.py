@@ -18,6 +18,7 @@ class Gaussians:
     rotations: Float[Tensor, "*batch 4"]
     harmonics: Float[Tensor, "*batch 3 _"]
     opacities: Float[Tensor, " *batch"]
+    class_: Float[Tensor, "*batch 16"] # Assuming 16 classes
 
 
 @dataclass
@@ -25,6 +26,7 @@ class GaussianAdapterCfg:
     gaussian_scale_min: float
     gaussian_scale_max: float
     sh_degree: int
+    class_dim: int = 16 # Assuming 16 classes
 
 
 class GaussianAdapter(nn.Module):
@@ -57,7 +59,7 @@ class GaussianAdapter(nn.Module):
         eps: float = 1e-8,
     ) -> Gaussians:
         device = extrinsics.device
-        scales, rotations, sh = raw_gaussians.split((3, 4, 3 * self.d_sh), dim=-1)
+        scales, rotations, sh, class_ = raw_gaussians.split((3, 4, 3 * self.d_sh, self.cfg.num_classes), dim=-1)
 
         # Map scale features to valid scale range.
         scale_min = self.cfg.gaussian_scale_min
@@ -92,6 +94,7 @@ class GaussianAdapter(nn.Module):
             # exporting Gaussians to ply files. This needs to be fixed...
             scales=scales,
             rotations=rotations.broadcast_to((*scales.shape[:-1], 4)),
+            class_=class_,
         )
 
     def get_scale_multiplier(
