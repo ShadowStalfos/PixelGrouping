@@ -101,6 +101,9 @@ class ModelWrapper(LightningModule):
         self.decoder = decoder
         self.data_shim = get_data_shim(self.encoder)
         self.losses = nn.ModuleList(losses)
+        num_objects = 16
+        num_classes = 200
+        self.classifier = torch.nn.Conv2d(num_objects, num_classes, kernel_size=1)
 
         # This is used for testing.
         self.benchmarker = Benchmarker()
@@ -120,11 +123,15 @@ class ModelWrapper(LightningModule):
             (h, w),
             depth_mode=self.train_cfg.depth_mode,
         )
-        # num_objects = 16
-        # num_classes = 200
-        # classifier = torch.nn.Conv2d(num_objects, num_classes, kernel_size=1)
-        # classifier.cuda()
-        # logits = classifier(output.color)
+
+        
+        print(output.class_.size())
+
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits = self.classifier(output.class_)
+        output.class_ = logits
+
         target_gt = batch["target"]["image"]
 
         # Compute metrics.
