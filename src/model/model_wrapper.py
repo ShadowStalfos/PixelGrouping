@@ -114,6 +114,11 @@ class ModelWrapper(LightningModule):
 
         # Run the model.
         gaussians = self.encoder(batch["context"], self.global_step, False)
+
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits = self.classifier(gaussians.class_)
+
         output = self.decoder.forward(
             gaussians,
             batch["target"]["extrinsics"],
@@ -121,16 +126,9 @@ class ModelWrapper(LightningModule):
             batch["target"]["near"],
             batch["target"]["far"],
             (h, w),
+            logits,
             depth_mode=self.train_cfg.depth_mode,
         )
-
-        
-        print(output.class_.size())
-
-        # MLP layer to classify the objects
-        self.classifier.cuda()
-        logits = self.classifier(output.class_)
-        output.class_ = logits
 
         target_gt = batch["target"]["image"]
 

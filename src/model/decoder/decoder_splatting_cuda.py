@@ -40,6 +40,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
         near: Float[Tensor, "batch view"],
         far: Float[Tensor, "batch view"],
         image_shape: tuple[int, int],
+        logits: Float[Tensor, "batch gaussian 1 class"],
         depth_mode: DepthRenderingMode | None = None,
     ) -> DecoderOutput:
         b, v, _, _ = extrinsics.shape
@@ -66,7 +67,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             repeat(self.background_color, "c -> (b v) c", b=b, v=v),
             repeat(gaussians.means, "b g xyz -> (b v) g xyz", v=v),
             repeat(gaussians.covariances, "b g i j -> (b v) g i j", v=v),
-            repeat(gaussians.class_, "b g c d_class -> (b v) g c d_class", v=v),
+            repeat(logits, "b g c d_class -> (b v) g c d_class", v=v),
             repeat(gaussians.opacities, "b g -> (b v) g", v=v),
             use_sh=False,
         )

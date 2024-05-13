@@ -4,7 +4,7 @@ defaults:
   - override /dataset: re10k
   - override /model/encoder: epipolar
   - override /model/encoder/backbone: dino
-  - override /loss: [mse, lpips]
+  - override /loss: [mse, lpips, crossentropy]
 
 wandb:
   name: DataFor3DGS

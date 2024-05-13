@@ -33,6 +33,6 @@ class LossMse(Loss[LossCECfg, LossCECfgWrapper]):
         gaussians: Gaussians,
         global_step: int,
     ) -> Float[Tensor, ""]:
-        gt = batch["target"]["mask"]
+        gt = batch["target"]["objects"]
         loss = self.loss(prediction.class_, gt)
         return self.cfg.weight * loss.mean() # is mean necessary here?
