@@ -85,8 +85,9 @@ class EncoderEpipolar(Encoder[EncoderEpipolarCfg]):
         self.to_gaussians = nn.Sequential(
             nn.ReLU(),
             nn.Linear(
+                # THE BENINGING ^_^
                 cfg.d_feature,
-                cfg.num_surfaces * (2 + self.gaussian_adapter.d_in),
+                cfg.num_surfaces * (2 + self.gaussian_adapter.d_in), # added class size to d_in
             ),
         )
         self.high_resolution_skip = nn.Sequential(
@@ -168,7 +169,7 @@ class EncoderEpipolar(Encoder[EncoderEpipolarCfg]):
             rearrange(xy_ray, "b v r srf xy -> b v r srf () xy"),
             depths,
             self.map_pdf_to_opacity(densities, global_step) / gpp,
-            rearrange(gaussians[..., 2:], "b v r srf c -> b v r srf () c"),
+            rearrange(gaussians[..., 2:], "b v r srf c -> b v r srf () c"), # raw_gaussians
             (h, w),
         )
 
@@ -209,6 +210,10 @@ class EncoderEpipolar(Encoder[EncoderEpipolarCfg]):
             rearrange(
                 opacity_multiplier * gaussians.opacities,
                 "b v r srf spp -> b (v r srf spp)",
+            ),
+            rearrange(
+                gaussians.class_,
+                "b v r srf spp c d_class -> b (v r srf spp) c d_class",
             ),
         )
 

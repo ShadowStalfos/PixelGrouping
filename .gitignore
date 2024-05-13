@@ -175,3 +175,8 @@ cython_debug/
 table.tex
 /baselines
 /test/*
+
+DataFor3DGS/
+
+.gitignore
+venvOld/

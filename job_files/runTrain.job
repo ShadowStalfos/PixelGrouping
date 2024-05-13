@@ -5,13 +5,14 @@
 #SBATCH --gpus=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
-#SBATCH --time=04:00:00
+#SBATCH --time=00:05:00
 #SBATCH --output=slurm_output_%A.out
 
 module purge
 module load 2022
 module load CUDA/11.8.0
 module load GCC/11.3.0
+module load Python/3.10.4-GCCcore-11.3.0
 
 # cd $HOME/pixelsplat/
 
