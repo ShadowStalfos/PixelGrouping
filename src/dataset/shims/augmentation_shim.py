@@ -19,9 +19,9 @@ def reflect_views(views: AnyViews) -> AnyViews:
         "image": views["image"].flip(-1),  # Reflect the image horizontally
         "extrinsics": reflect_extrinsics(views["extrinsics"]),
     }
-    if "object" in views:
+    if "objects" in views:
         # Assuming the mask is also a tensor image that can be flipped in the same way
-        reflected_views["object"] = views["object"].flip(-1)  # Reflect the object mask horizontally
+        reflected_views["objects"] = views["objects"].flip(-1)  # Reflect the object mask horizontally
     return reflected_views
 
 
