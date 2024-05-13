@@ -16,7 +16,7 @@ class LossCECfg:
 
 @dataclass
 class LossCECfgWrapper:
-    ce: LossCECfg
+    crossentropy: LossCECfg
 
 
 class LossCE(Loss[LossCECfg, LossCECfgWrapper]):
