@@ -195,8 +195,8 @@ class ModelWrapper(LightningModule):
                     batch["target"]["intrinsics"][:1, i : i + 32],
                     batch["target"]["near"][:1, i : i + 32],
                     batch["target"]["far"][:1, i : i + 32],
-                    logits,
                     (h, w),
+                    logits,
                 )
                 color.append(output.color)
                 class_.append(output.class_)
@@ -255,8 +255,8 @@ class ModelWrapper(LightningModule):
             batch["target"]["intrinsics"],
             batch["target"]["near"],
             batch["target"]["far"],
-            logits_probabilistic,
             (h, w),
+            logits_probabilistic,
         )
         rgb_probabilistic = output_probabilistic.color[0]
         gaussians_deterministic = self.encoder(
@@ -277,8 +277,8 @@ class ModelWrapper(LightningModule):
             batch["target"]["intrinsics"],
             batch["target"]["near"],
             batch["target"]["far"],
-            logits_deterministic,
             (h, w),
+            logits_deterministic,
         )
         rgb_deterministic = output_deterministic.color[0]
 
