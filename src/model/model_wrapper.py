@@ -117,7 +117,15 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
+        rearrange(
+            gaussians.class_,
+            "b rest c d_class -> b d_class c rest",
+        ),
         logits = self.classifier(gaussians.class_)
+        rearrange(
+            gaussians.class_,
+            "b d_class c rest -> b rest c d_class",
+        ),
 
         output = self.decoder.forward(
             gaussians,
@@ -179,7 +187,15 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
+        rearrange(
+            gaussians.class_,
+            "b rest c d_class -> b d_class c rest",
+        ),
         logits = self.classifier(gaussians.class_)
+        rearrange(
+            gaussians.class_,
+            "b d_class c rest -> b rest c d_class",
+        ),
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -241,8 +257,17 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
+        rearrange(
+            gaussians_probabilistic.class_,
+            "b rest c d_class -> b d_class c rest",
+        ),
+        print(gaussians_probabilistic.class_.size())
         logits_probabilistic = self.classifier(gaussians_probabilistic.class_)
-
+        rearrange(
+            gaussians_probabilistic.class_,
+            "b d_class c rest -> b rest c d_class",
+        ),
+        
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
             batch["target"]["extrinsics"],
