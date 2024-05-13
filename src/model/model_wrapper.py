@@ -117,15 +117,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        rearrange(
-            gaussians.class_,
-            "b rest c d_class -> b d_class c rest",
-        ),
+        gaussians.class_.permute(0, 3, 2, 1)
         logits = self.classifier(gaussians.class_)
-        rearrange(
-            gaussians.class_,
-            "b d_class c rest -> b rest c d_class",
-        ),
+        gaussians.class_.permute(0, 3, 2, 1)
 
         output = self.decoder.forward(
             gaussians,
@@ -187,15 +181,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        rearrange(
-            gaussians.class_,
-            "b rest c d_class -> b d_class c rest",
-        ),
+        gaussians.class_.permute(0, 3, 2, 1)
         logits = self.classifier(gaussians.class_)
-        rearrange(
-            gaussians.class_,
-            "b d_class c rest -> b rest c d_class",
-        ),
+        gaussians.class_.permute(0, 3, 2, 1)
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -257,16 +245,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        rearrange(
-            gaussians_probabilistic.class_,
-            "b rest c d_class -> b d_class c rest",
-        ),
-        print(gaussians_probabilistic.class_.size())
+        gaussians_probabilistic.class_.permute(0, 3, 2, 1)
         logits_probabilistic = self.classifier(gaussians_probabilistic.class_)
-        rearrange(
-            gaussians_probabilistic.class_,
-            "b d_class c rest -> b rest c d_class",
-        ),
+        gaussians_probabilistic.class_.permute(0, 3, 2, 1)
         
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
@@ -286,7 +267,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
+        gaussians_deterministic.class_.permute(0, 3, 2, 1)
         logits_deterministic = self.classifier(gaussians_deterministic.class_)
+        gaussians_deterministic.class_.permute(0, 3, 2, 1)
 
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,
