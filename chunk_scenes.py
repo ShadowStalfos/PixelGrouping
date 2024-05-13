@@ -93,15 +93,9 @@ class ImageProcessor:
 
     def convert_image(self, image):
         """Convert a list of raw byte images to a tensor of shape [batch, 3, height, width]."""
-        pil_image = Image.open(BytesIO(image.numpy().tobytes()))  # Convert the raw bytes to a PIL Image
+        pil_image = Image.open(BytesIO(image.numpy()))  # Convert the raw bytes to a PIL Image
         tensor_image = self.to_tensor(pil_image)  # Convert the PIL Image to a PyTorch Tensor
         return tensor_image
-    def convert_mask(self, mask):
-        mask_pil = Image.open(BytesIO(mask.numpy().tobytes()))
-        # Convert mask to a tensor: assumes that the mask is grayscale (1 channel)
-        mask_tensor = torch.tensor(np.array(mask_pil), dtype=torch.int64)  # Use int64 for categorical data
-        return mask_tensor
-
 
 def chunk_stage(dirs, stage):
     chunk_size = 0
@@ -127,7 +121,6 @@ def chunk_stage(dirs, stage):
         # Read images and metadata.
         images = load_images(image_dir)
         objects = load_images(object_dir)
-
         cam_infos = readColmapSceneInfo(scene_path=scene_dir)
         scene_rep = {"image_names": None, "cameras": None}
         camera_data = []
@@ -154,11 +147,7 @@ def chunk_stage(dirs, stage):
         # image_processor = ImageProcessor()
         #
         # first_image_tensor = image_processor.convert_image(scene_rep["images"][0])  # First image tensor
-        # print(first_image_tensor)
-        # print(first_image_tensor.shape)
-        # first_mask_tensor = image_processor.convert_mask(scene_rep["objects"][0])  # First object mask tensor
-        # print(first_mask_tensor)
-        # print(first_mask_tensor.shape)
+        # first_mask_tensor = image_processor.convert_image(scene_rep["objects"][0])  # First object mask tensor
         # show_image_and_mask(first_image_tensor, first_mask_tensor)
 
         assert len(images) == len(scene_rep["image_names"])
