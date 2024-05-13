@@ -58,7 +58,7 @@ def render_cuda(
     scale_invariant: bool = True,
     use_sh: bool = True,
 ) -> Float[Tensor, "batch 3 height width"]:
-    assert use_sh or gaussian_sh_coefficients.shape[-1] == 1
+    # assert use_sh or gaussian_sh_coefficients.shape[-1] == 1
 
     # Make sure everything is in a range where numerical issues don't appear.
     if scale_invariant:

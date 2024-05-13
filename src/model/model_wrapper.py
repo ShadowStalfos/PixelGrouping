@@ -485,14 +485,14 @@ class ModelWrapper(LightningModule):
         near = repeat(batch["context"]["near"][:, 0], "b -> b v", v=num_frames)
         far = repeat(batch["context"]["far"][:, 0], "b -> b v", v=num_frames)
         output_prob = self.decoder.forward(
-            gaussians_prob, extrinsics, intrinsics, near, far, (h, w), "depth"
+            gaussians_prob, extrinsics, intrinsics, near, far, (h, w), depth_mode="depth"
         )
         images_prob = [
             vcat(rgb, depth)
             for rgb, depth in zip(output_prob.color[0], depth_map(output_prob.depth[0]))
         ]
         output_det = self.decoder.forward(
-            gaussians_det, extrinsics, intrinsics, near, far, (h, w), "depth"
+            gaussians_det, extrinsics, intrinsics, near, far, (h, w), depth_mode="depth"
         )
         images_det = [
             vcat(rgb, depth)
