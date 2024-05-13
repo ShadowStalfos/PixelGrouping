@@ -149,8 +149,14 @@ class DatasetRE10k(IterableDataset):
                         context_object_masks = self.convert_masks(context_object_masks)
                         target_object_masks = self.convert_masks(target_object_masks)
 
+                        self.save_image_and_mask(example, 'context', 'before', object_masks)
+                        self.save_image_and_mask(example, 'target', 'before', object_masks)
+
                 except IndexError:
+                    print(f"IndexError occurred: {e}")
                     continue
+
+                raise Exception
 
                 # Skip the example if the images don't have the right shape.
                 # context_image_invalid = context_images.shape[1:] != (3, 360, 640)
@@ -208,7 +214,7 @@ class DatasetRE10k(IterableDataset):
                     example = apply_augmentation_shim(example)
                 example = apply_crop_shim(example, tuple(self.cfg.image_shape), imgs_nearest_neighbors=True)
 
-                # Save images and masks after transformation
+                # # Save images and masks after transformation
                 # self.save_image_and_mask(example, 'context', 'after', object_masks)
                 # self.save_image_and_mask(example, 'target', 'after', object_masks)
 
