@@ -11,7 +11,7 @@ LOSSES = {
     LossCECfgWrapper: LossCE,
 }
 
-LossCfgWrapper = LossDepthCfgWrapper | LossLpipsCfgWrapper | LossMseCfgWrapper
+LossCfgWrapper = LossDepthCfgWrapper | LossLpipsCfgWrapper | LossMseCfgWrapper | LossCECfgWrapper
 
 
 def get_losses(cfgs: list[LossCfgWrapper]) -> list[Loss]:
