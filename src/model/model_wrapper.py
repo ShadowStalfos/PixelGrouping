@@ -120,7 +120,7 @@ class ModelWrapper(LightningModule):
         class_ = gaussians.class_.detach().clone()
         class_ = class_.permute(0, 3, 2, 1)
         logits = self.classifier(class_)
-        class_ = class_.permute(0, 3, 2, 1)
+        logits = logits.permute(0, 3, 2, 1)
 
         output = self.decoder.forward(
             gaussians,
@@ -185,7 +185,7 @@ class ModelWrapper(LightningModule):
         class_ = gaussians.class_.detach().clone()
         class_ = class_.permute(0, 3, 2, 1)
         logits = self.classifier(class_)
-        class_ = class_.permute(0, 3, 2, 1)
+        logits = logits.permute(0, 3, 2, 1)
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -250,7 +250,7 @@ class ModelWrapper(LightningModule):
         class_ = gaussians_probabilistic.class_.detach().clone()
         class_ = class_.permute(0, 3, 2, 1)
         logits_probabilistic = self.classifier(class_)
-        class_ = class_.permute(0, 3, 2, 1)
+        logits_probabilistic = logits_probabilistic.permute(0, 3, 2, 1)
         
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
@@ -273,7 +273,7 @@ class ModelWrapper(LightningModule):
         class_ = gaussians_deterministic.class_.detach().clone()
         class_ = class_.permute(0, 3, 2, 1)
         logits_deterministic = self.classifier(class_)
-        class_ = class_.permute(0, 3, 2, 1)
+        logits_deterministic = logits_deterministic.permute(0, 3, 2, 1)
 
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,
