@@ -117,9 +117,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        gaussians.class_.permute(0, 3, 2, 1)
-        logits = self.classifier(gaussians.class_)
-        gaussians.class_.permute(0, 3, 2, 1)
+        class_ = gaussians.class_.detach().clone()
+        class_ = class_.permute(0, 3, 2, 1)
+        logits = self.classifier(class_)
 
         output = self.decoder.forward(
             gaussians,
@@ -181,9 +181,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        gaussians.class_.permute(0, 3, 2, 1)
-        logits = self.classifier(gaussians.class_)
-        gaussians.class_.permute(0, 3, 2, 1)
+        class_ = gaussians.class_.detach().clone()
+        class_ = class_.permute(0, 3, 2, 1)
+        logits = self.classifier(class_)
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -245,9 +245,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        gaussians_probabilistic.class_.permute(0, 3, 2, 1)
-        logits_probabilistic = self.classifier(gaussians_probabilistic.class_)
-        gaussians_probabilistic.class_.permute(0, 3, 2, 1)
+        class_ = gaussians_probabilistic.class_.detach().clone()
+        class_ = class_.permute(0, 3, 2, 1)
+        logits_probabilistic = self.classifier(class_)
         
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
@@ -267,9 +267,9 @@ class ModelWrapper(LightningModule):
 
         # MLP layer to classify the objects
         self.classifier.cuda()
-        gaussians_deterministic.class_.permute(0, 3, 2, 1)
-        logits_deterministic = self.classifier(gaussians_deterministic.class_)
-        gaussians_deterministic.class_.permute(0, 3, 2, 1)
+        class_ = gaussians_deterministic.class_.detach().clone()
+        class_ = class_.permute(0, 3, 2, 1)
+        logits_deterministic = self.classifier(class_)
 
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,
