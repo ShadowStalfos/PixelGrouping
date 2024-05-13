@@ -176,8 +176,14 @@ class ModelWrapper(LightningModule):
                 self.global_step,
                 deterministic=False,
             )
+
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits = self.classifier(gaussians.class_)
+
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
+            class_ = []
             for i in range(0, batch["target"]["far"].shape[1], 32):
                 output = self.decoder.forward(
                     gaussians,
@@ -185,10 +191,13 @@ class ModelWrapper(LightningModule):
                     batch["target"]["intrinsics"][:1, i : i + 32],
                     batch["target"]["near"][:1, i : i + 32],
                     batch["target"]["far"][:1, i : i + 32],
+                    logits,
                     (h, w),
                 )
                 color.append(output.color)
+                class_.append(output.class_)
             color = torch.cat(color, dim=1)
+            class_ = torch.cat(class_, dim=1)
 
         # Save images.
         (scene,) = batch["scene"]
@@ -196,6 +205,8 @@ class ModelWrapper(LightningModule):
         path = self.test_cfg.output_path / name
         for index, color in zip(batch["target"]["index"][0], color[0]):
             save_image(color, path / scene / f"color/{index:0>6}.png")
+        for index, class_ in zip(batch["target"]["index"][0], class_[0]):
+            save_image(class_, path / scene / f"class/{index:0>6}.png")
         for index, color in zip(
             batch["context"]["index"][0], batch["context"]["image"][0]
         ):
@@ -227,12 +238,18 @@ class ModelWrapper(LightningModule):
             self.global_step,
             deterministic=False,
         )
+
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits_probabilistic = self.classifier(gaussians_probabilistic.class_)
+
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
             batch["target"]["extrinsics"],
             batch["target"]["intrinsics"],
             batch["target"]["near"],
             batch["target"]["far"],
+            logits_probabilistic,
             (h, w),
         )
         rgb_probabilistic = output_probabilistic.color[0]
@@ -241,12 +258,18 @@ class ModelWrapper(LightningModule):
             self.global_step,
             deterministic=True,
         )
+
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits_deterministic = self.classifier(gaussians_deterministic.class_)
+
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,
             batch["target"]["extrinsics"],
             batch["target"]["intrinsics"],
             batch["target"]["near"],
             batch["target"]["far"],
+            logits_deterministic,
             (h, w),
         )
         rgb_deterministic = output_deterministic.color[0]
