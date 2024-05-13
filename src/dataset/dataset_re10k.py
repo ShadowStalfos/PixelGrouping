@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import torch
 import torchvision.transforms as tf
 from einops import rearrange, repeat
@@ -19,6 +20,11 @@ from .shims.augmentation_shim import apply_augmentation_shim
 from .shims.crop_shim import apply_crop_shim
 from .types import Stage
 from .view_sampler import ViewSampler
+
+import os
+import matplotlib
+matplotlib.use('Agg')  # Set the backend before importing pyplot
+import matplotlib.pyplot as plt
 
 
 @dataclass
@@ -52,6 +58,7 @@ class DatasetRE10k(IterableDataset):
         self.stage = stage
         self.view_sampler = view_sampler
         self.to_tensor = tf.ToTensor()
+        self.save_id = 0  # Initialize the index
 
         # Collect chunks.
         self.chunks = []
@@ -85,6 +92,7 @@ class DatasetRE10k(IterableDataset):
             ]
 
         for chunk_path in self.chunks:
+
             # Load the chunk.
             chunk = torch.load(chunk_path)
 
@@ -97,6 +105,10 @@ class DatasetRE10k(IterableDataset):
                 chunk = self.shuffle(chunk)
 
             for example in chunk:
+                object_masks = False
+                if "objects" in example:
+                    object_masks = True
+
                 extrinsics, intrinsics = self.convert_poses(example["cameras"])
                 scene = example["key"]
 
@@ -119,11 +131,24 @@ class DatasetRE10k(IterableDataset):
                     context_images = [
                         example["images"][index.item()] for index in context_indices
                     ]
-                    context_images = self.convert_images(context_images)
                     target_images = [
                         example["images"][index.item()] for index in target_indices
                     ]
+
+                    context_images = self.convert_images(context_images)
                     target_images = self.convert_images(target_images)
+
+                    if object_masks:
+                        context_object_masks = [
+                            example["objects"][index.item()] for index in context_indices
+                        ]
+                        target_object_masks = [
+                            example["objects"][index.item()] for index in target_indices
+                        ]
+
+                        context_object_masks = self.convert_masks(context_object_masks)
+                        target_object_masks = self.convert_masks(target_object_masks)
+
                 except IndexError:
                     continue
 
@@ -172,9 +197,27 @@ class DatasetRE10k(IterableDataset):
                     },
                     "scene": scene,
                 }
+                if object_masks:
+                    example["context"]["objects"] = context_object_masks
+                    example["target"]["objects"] = target_object_masks
+
+                # self.save_image_and_mask(example, 'context', 'before', object_masks)
+                # self.save_image_and_mask(example, 'target', 'before', object_masks)
+
                 if self.stage == "train" and self.cfg.augment:
                     example = apply_augmentation_shim(example)
-                yield apply_crop_shim(example, tuple(self.cfg.image_shape))
+                example = apply_crop_shim(example, tuple(self.cfg.image_shape), imgs_nearest_neighbors=True)
+
+                # Save images and masks after transformation
+                # self.save_image_and_mask(example, 'context', 'after', object_masks)
+                # self.save_image_and_mask(example, 'target', 'after', object_masks)
+
+                self.save_id += 1
+
+                if self.save_id == 20:
+                    raise Exception("Processing limit reached at index 1000.")
+
+                yield example
 
     def convert_poses(
         self,
@@ -208,6 +251,15 @@ class DatasetRE10k(IterableDataset):
             image = Image.open(BytesIO(image.numpy().tobytes()))
             torch_images.append(self.to_tensor(image))
         return torch.stack(torch_images)
+
+    def convert_masks(self, masks):
+        torch_masks = []
+        for mask in masks:
+            mask = Image.open(BytesIO(mask.numpy().tobytes()))
+            # Convert mask to a tensor: assumes that the mask is grayscale (1 channel)
+            mask_tensor = torch.tensor(np.array(mask), dtype=torch.int64)  # Use int64 for categorical data
+            torch_masks.append(mask_tensor.unsqueeze(0))  # Add a channel dimension if needed
+        return torch.stack(torch_masks)
 
     def get_bound(
         self,
@@ -247,3 +299,36 @@ class DatasetRE10k(IterableDataset):
 
     def __len__(self) -> int:
         return len(self.index.keys())
+
+    def save_image_and_mask(self, example, stage, prefix, object_masks, save_dir='loaded_imgs_objs'):
+        """Saves images and their corresponding masks to a directory."""
+        os.makedirs(save_dir, exist_ok=True)  # Ensure the directory exists
+
+        # Extract the relevant data from the example
+        images = example[stage]['image']
+        masks = example[stage].get('objects', None)  # Use None as default to check later
+
+        for i, image_tensor in enumerate(images):
+            fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+            # Image
+            ax[0].imshow(image_tensor.permute(1, 2, 0))  # Convert CxHxW to HxWxC
+            ax[0].set_title(f'{prefix} Image {i}')
+            ax[0].axis('off')
+
+            # Check if masks are available and align with current image index
+            if object_masks:
+                mask_tensor = masks[i]
+                ax[1].imshow(mask_tensor.squeeze(), cmap='gray')  # Assume mask is single-channel
+                ax[1].set_title(f'{prefix} Mask {i}')
+            else:
+                ax[1].text(0.5, 0.5, 'No mask available', horizontalalignment='center', verticalalignment='center')
+
+            ax[1].axis('off')
+
+            # Save the figure
+            fig_filename = os.path.join(save_dir, f'{prefix}_{stage}_image_mask_{self.save_id}_{i}.png')
+            fig.savefig(fig_filename)
+            plt.close(fig)
+            print(f"Saved figure to {fig_filename}")
+

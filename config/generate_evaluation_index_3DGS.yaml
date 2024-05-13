@@ -27,8 +27,8 @@ index_generator:
   num_target_views: 3
   min_overlap: 0.6
   max_overlap: 1.0
-  min_distance: 45
-  max_distance: 135
+  min_distance: 5
+  max_distance: 10
   output_path: outputs/evaluation_index_3DGS
   save_previews: false
   seed: 123
