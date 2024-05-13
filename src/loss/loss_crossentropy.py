@@ -21,7 +21,7 @@ class LossCECfgWrapper:
 
 class LossCE(Loss[LossCECfg, LossCECfgWrapper]):
     def __init__(self, cfg: LossCECfgWrapper) -> None:
-        super().__init__()
+        super().__init__(cfg)
 
         self.loss = nn.CrossEntropyLoss()
 
