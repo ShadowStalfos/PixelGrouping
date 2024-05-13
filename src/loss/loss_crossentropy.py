@@ -19,7 +19,7 @@ class LossCECfgWrapper:
     mse: LossCECfg
 
 
-class LossMse(Loss[LossCECfg, LossCECfgWrapper]):
+class LossCE(Loss[LossCECfg, LossCECfgWrapper]):
     def __init__(self, cfg: LossCECfgWrapper) -> None:
         super().__init__()
 
