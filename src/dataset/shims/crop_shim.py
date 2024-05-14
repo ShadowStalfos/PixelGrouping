@@ -22,6 +22,46 @@ def rescale(image: Float[Tensor, "3 h_in w_in"], shape: tuple[int, int], method=
     image_new = torch.tensor(image_new, dtype=image.dtype, device=image.device)
     return rearrange(image_new, "h w c -> c h w")
 
+def rescale_masks_same(masks: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+    """
+    Rescale a batch of masks using nearest neighbor interpolation, using PIL for consistency with image rescaling.
+
+    Args:
+        masks (torch.Tensor): The batch of masks tensors to rescale.
+        shape (tuple[int, int]): The target shape (height, width).
+
+    Returns:
+        torch.Tensor: The resized batch of mask tensors.
+    """
+    # Determine initial dimensions
+    if masks.dim() == 4:  # Assuming shape [batch, 1, height, width]
+        batch, channels, h_in, w_in = masks.shape
+    elif masks.dim() == 3:  # Assuming shape [batch, height, width]
+        batch, h_in, w_in = masks.shape
+        masks = masks.unsqueeze(1)  # Add channel dimension
+
+    h_out, w_out = shape
+    assert h_out <= h_in and w_out <= w_in
+
+    scale_factor = max(h_out / h_in, w_out / w_in)
+    h_scaled = round(h_in * scale_factor)
+    w_scaled = round(w_in * scale_factor)
+    assert h_scaled == h_out or w_scaled == w_out
+
+    resized_masks = []
+
+    for i in range(batch):
+        mask = masks[i, 0]  # Access the single channel
+        mask_image = Image.fromarray(mask.cpu().numpy().astype(np.uint8), 'L')  # Ensure grayscale image
+        resized_mask_image = mask_image.resize((w_scaled, h_scaled), Image.NEAREST)
+        resized_mask_tensor = torch.from_numpy(np.array(resized_mask_image)).to(masks.dtype).to(masks.device)
+        resized_mask_tensor = resized_mask_tensor.unsqueeze(0)  # Maintain channel dimension
+        resized_masks.append(resized_mask_tensor)
+
+    # Stack all the masks tensors together in the batch dimension
+    resized_masks_tensor = torch.stack(resized_masks)
+
+    return resized_masks_tensor
 
 def center_crop(
     images: Float[Tensor, "*#batch c h w"],
@@ -112,7 +152,7 @@ def apply_crop_shim_to_views(views: AnyViews, shape: tuple[int, int], imgs_neare
     }
     if "objects" in views:
         # Rescale the masks to the desired shape using nearest neighbor interpolation
-        masks = rescale_masks(views["objects"], shape)
+        masks = rescale_masks_same(views["objects"], shape)
 
         # Perform a center crop on the resized masks
         masks = center_crop_masks(masks, shape)
