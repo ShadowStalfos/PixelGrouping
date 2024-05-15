@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from jaxtyping import Float
-from torch import Tensor, nn
+from torch import Tensor, nn, argmax
 from torchvision.transforms.functional import rgb_to_grayscale as rgb2gray
 
 from ..dataset.types import BatchedExample
@@ -34,7 +34,7 @@ class LossCE(Loss[LossCECfg, LossCECfgWrapper]):
         gaussians: Gaussians,
         global_step: int,
     ) -> Float[Tensor, ""]:
-        gt = batch["target"]["objects"].float()
-        grey_class = rgb2gray(prediction.class_)
-        loss = self.loss(grey_class, gt)
-        return self.cfg.weight * loss.mean() # is mean necessary here?
+        gt = batch["target"]["objects"].float().squeeze(0)
+        x = argmax(prediction.class_, dim=2).float().permute(1, 0, 2, 3)
+        loss = self.loss(x, gt)
+        return self.cfg.weight * loss.mean()

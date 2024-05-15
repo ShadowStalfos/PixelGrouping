@@ -43,6 +43,8 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
         class_: Float[Tensor, "batch gaussian 1 class"],
         depth_mode: DepthRenderingMode | None = None,
     ) -> DecoderOutput:
+        
+        class_depth = class_.detach().clone()
         b, v, _, _ = extrinsics.shape
         color, class_ = render_cuda(
             rearrange(extrinsics, "b v i j -> (b v) i j"),
@@ -66,7 +68,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             None
             if depth_mode is None
             else self.render_depth(
-                gaussians, extrinsics, intrinsics, near, far, image_shape, rearrange(class_, "b v c h w -> (b v) c h w", b=b, v=v), depth_mode
+                gaussians, extrinsics, intrinsics, near, far, image_shape, class_depth, depth_mode
             ),
         )
 

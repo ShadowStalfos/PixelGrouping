@@ -193,7 +193,7 @@ class ModelWrapper(LightningModule):
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
-            class_ = []
+            class_list = []
             for i in range(0, batch["target"]["far"].shape[1], 32):
                 output = self.decoder.forward(
                     gaussians,
@@ -207,7 +207,7 @@ class ModelWrapper(LightningModule):
                 color.append(output.color)
                 class_.append(output.class_)
             color = torch.cat(color, dim=1)
-            class_ = torch.cat(class_, dim=1)
+            class_ = torch.cat(class_list, dim=1)
 
         # Save images.
         (scene,) = batch["scene"]
