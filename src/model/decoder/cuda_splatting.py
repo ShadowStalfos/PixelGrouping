@@ -54,6 +54,7 @@ def render_cuda(
     gaussian_means: Float[Tensor, "batch gaussian 3"],
     gaussian_covariances: Float[Tensor, "batch gaussian 3 3"],
     gaussian_sh_coefficients: Float[Tensor, "batch gaussian dim d_sh"], # edited 3 to dim to accept class
+    sh_objs = , # TODO: add shape
     gaussian_opacities: Float[Tensor, "batch gaussian"],
     scale_invariant: bool = True,
     use_sh: bool = True,
@@ -88,6 +89,7 @@ def render_cuda(
 
     all_images = []
     all_radii = []
+    all_objects = []
     for i in range(b):
         # Set up a tensor for the gradients of the screen-space means.
         mean_gradients = torch.zeros_like(gaussian_means[i], requires_grad=True)
@@ -114,17 +116,19 @@ def render_cuda(
 
         row, col = torch.triu_indices(3, 3)
 
-        image, radii = rasterizer(
+        image, radii, obj = rasterizer(
             means3D=gaussian_means[i],
             means2D=mean_gradients,
             shs=shs[i] if use_sh else None,
+            sh_objs = sh_objs,
             colors_precomp=None if use_sh else shs[i, :, 0, :], # takes the first SH coefficient of xyz/rgb
             opacities=gaussian_opacities[i, ..., None],
             cov3D_precomp=gaussian_covariances[i, :, row, col],
         )
         all_images.append(image)
         all_radii.append(radii)
-    return torch.stack(all_images)
+        all_objects.append(obj)
+    return torch.stack(all_images), torch.stack(all_objects)
 
 
 def render_cuda_orthographic(
