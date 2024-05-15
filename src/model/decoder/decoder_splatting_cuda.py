@@ -58,7 +58,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             repeat(gaussians.opacities, "b g -> (b v) g", v=v),
         )
         color = rearrange(color, "(b v) c h w -> b v c h w", b=b, v=v)
-        class_ = rearrange(class_, "(b v) c h w -> b v c h w", b=b, v=v) # TODO: change shape?
+        class_ = rearrange(class_, "(b v) c h w -> b v c h w", b=b, v=v)
 
         return DecoderOutput(
             color,
@@ -66,7 +66,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             None
             if depth_mode is None
             else self.render_depth(
-                gaussians, extrinsics, intrinsics, near, far, image_shape, rearrange(class_, "b v c h w -> (b v) c h w", b=b, v=v) # TODO: change shape?, depth_mode
+                gaussians, extrinsics, intrinsics, near, far, image_shape, rearrange(class_, "b v c h w -> (b v) c h w", b=b, v=v), depth_mode
             ),
         )
 
@@ -90,7 +90,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             image_shape,
             repeat(gaussians.means, "b g xyz -> (b v) g xyz", v=v),
             repeat(gaussians.covariances, "b g i j -> (b v) g i j", v=v),
-            class_, # TODO: add shape
+            repeat(class_, "b g c d_class -> (b v) g c d_class", v=v),
             repeat(gaussians.opacities, "b g -> (b v) g", v=v),
             mode=mode,
         )

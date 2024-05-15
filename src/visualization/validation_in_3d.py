@@ -39,6 +39,8 @@ def render_projections(
         minima, maxima, margin=margin
     )
 
+    class_ = gaussians.class_.detach().clone()
+
     projections = []
     for look_axis in range(3):
         right_axis = (look_axis + 1) % 3
@@ -65,7 +67,7 @@ def render_projections(
         width = extents[:, right_axis]
         height = extents[:, down_axis]
 
-        projection = render_cuda_orthographic(
+        projection, _ = render_cuda_orthographic(
             extrinsics,
             width,
             height,
@@ -76,6 +78,7 @@ def render_projections(
             gaussians.means,
             gaussians.covariances,
             gaussians.harmonics,
+            class_,
             gaussians.opacities,
             fov_degrees=10.0,
         )
