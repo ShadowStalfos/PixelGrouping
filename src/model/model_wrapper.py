@@ -205,18 +205,21 @@ class ModelWrapper(LightningModule):
                     class_,
                 )
                 color.append(output.color)
-                class_.append(output.class_)
+                class_list.append(output.class_)
             color = torch.cat(color, dim=1)
             class_ = torch.cat(class_list, dim=1)
 
         # Save images.
+        x = torch.argmax(class_, dim=2).float().unsqueeze(2)
+        x /= x.max()
+        x = x.repeat(1, 1, 3, 1, 1)
         (scene,) = batch["scene"]
         name = get_cfg()["wandb"]["name"]
         path = self.test_cfg.output_path / name
         for index, color in zip(batch["target"]["index"][0], color[0]):
             save_image(color, path / scene / f"color/{index:0>6}.png")
-        for index, class_ in zip(batch["target"]["index"][0], class_[0]):
-            save_image(class_, path / scene / f"class/{index:0>6}.png")
+        for index, x in zip(batch["target"]["index"][0], x[0]):
+            save_image(x, path / scene / f"class/{index:0>6}.png")
         for index, color in zip(
             batch["context"]["index"][0], batch["context"]["image"][0]
         ):
