@@ -115,12 +115,14 @@ class ModelWrapper(LightningModule):
         # Run the model.
         gaussians = self.encoder(batch["context"], self.global_step, False)
 
-        # MLP layer to classify the objects
-        self.classifier.cuda()
         class_ = gaussians.class_.detach().clone()
-        class_ = class_.permute(0, 3, 2, 1)
-        logits = self.classifier(class_)
-        logits = logits.permute(0, 3, 2, 1)
+
+        # MLP layer to classify the objects # TODO: move after decoder
+        # self.classifier.cuda()
+        # class_ = gaussians.class_.detach().clone()
+        # class_ = class_.permute(0, 3, 2, 1)
+        # logits = self.classifier(class_)
+        # logits = logits.permute(0, 3, 2, 1)
 
         output = self.decoder.forward(
             gaussians,
@@ -129,7 +131,7 @@ class ModelWrapper(LightningModule):
             batch["target"]["near"],
             batch["target"]["far"],
             (h, w),
-            logits,
+            class_,
             depth_mode=self.train_cfg.depth_mode,
         )
 
@@ -180,12 +182,14 @@ class ModelWrapper(LightningModule):
                 deterministic=False,
             )
 
-        # MLP layer to classify the objects
-        self.classifier.cuda()
         class_ = gaussians.class_.detach().clone()
-        class_ = class_.permute(0, 3, 2, 1)
-        logits = self.classifier(class_)
-        logits = logits.permute(0, 3, 2, 1)
+
+        # MLP layer to classify the objects
+        # self.classifier.cuda()
+        # class_ = gaussians.class_.detach().clone()
+        # class_ = class_.permute(0, 3, 2, 1)
+        # logits = self.classifier(class_)
+        # logits = logits.permute(0, 3, 2, 1)
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -198,7 +202,7 @@ class ModelWrapper(LightningModule):
                     batch["target"]["near"][:1, i : i + 32],
                     batch["target"]["far"][:1, i : i + 32],
                     (h, w),
-                    logits,
+                    class_,
                 )
                 color.append(output.color)
                 class_.append(output.class_)
@@ -245,12 +249,14 @@ class ModelWrapper(LightningModule):
             deterministic=False,
         )
 
-        # MLP layer to classify the objects
-        self.classifier.cuda()
         class_ = gaussians_probabilistic.class_.detach().clone()
-        class_ = class_.permute(0, 3, 2, 1)
-        logits_probabilistic = self.classifier(class_)
-        logits_probabilistic = logits_probabilistic.permute(0, 3, 2, 1)
+
+        # MLP layer to classify the objects
+        # self.classifier.cuda()
+        # class_ = gaussians_probabilistic.class_.detach().clone()
+        # class_ = class_.permute(0, 3, 2, 1)
+        # logits_probabilistic = self.classifier(class_)
+        # logits_probabilistic = logits_probabilistic.permute(0, 3, 2, 1)
         
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
@@ -259,7 +265,7 @@ class ModelWrapper(LightningModule):
             batch["target"]["near"],
             batch["target"]["far"],
             (h, w),
-            logits_probabilistic,
+            class_,
         )
         rgb_probabilistic = output_probabilistic.color[0]
         gaussians_deterministic = self.encoder(
@@ -268,12 +274,14 @@ class ModelWrapper(LightningModule):
             deterministic=True,
         )
 
-        # MLP layer to classify the objects
-        self.classifier.cuda()
         class_ = gaussians_deterministic.class_.detach().clone()
-        class_ = class_.permute(0, 3, 2, 1)
-        logits_deterministic = self.classifier(class_)
-        logits_deterministic = logits_deterministic.permute(0, 3, 2, 1)
+
+        # MLP layer to classify the objects
+        # self.classifier.cuda()
+        # class_ = gaussians_deterministic.class_.detach().clone()
+        # class_ = class_.permute(0, 3, 2, 1)
+        # logits_deterministic = self.classifier(class_)
+        # logits_deterministic = logits_deterministic.permute(0, 3, 2, 1)
 
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,
@@ -282,7 +290,7 @@ class ModelWrapper(LightningModule):
             batch["target"]["near"],
             batch["target"]["far"],
             (h, w),
-            logits_deterministic,
+            class_,
         )
         rgb_deterministic = output_deterministic.color[0]
 

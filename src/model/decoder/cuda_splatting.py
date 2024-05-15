@@ -54,11 +54,11 @@ def render_cuda(
     gaussian_means: Float[Tensor, "batch gaussian 3"],
     gaussian_covariances: Float[Tensor, "batch gaussian 3 3"],
     gaussian_sh_coefficients: Float[Tensor, "batch gaussian dim d_sh"], # edited 3 to dim to accept class
-    sh_objs = , # TODO: add shape
+    sh_objs, # TODO: add shape
     gaussian_opacities: Float[Tensor, "batch gaussian"],
     scale_invariant: bool = True,
     use_sh: bool = True,
-) -> Float[Tensor, "batch 3 height width"]:
+) -> tuple[Float[Tensor, "batch 3 height width"], Float[Tensor, "batch 16 height width"]]:
     # assert use_sh or gaussian_sh_coefficients.shape[-1] == 1
 
     # Make sure everything is in a range where numerical issues don't appear.
@@ -74,6 +74,8 @@ def render_cuda(
     _, _, _, n = gaussian_sh_coefficients.shape
     degree = isqrt(n) - 1
     shs = rearrange(gaussian_sh_coefficients, "b g xyz n -> b g n xyz").contiguous()
+
+    sh_objs = rearrange(sh_objs, "b g xyz n -> b g n xyz").contiguous()
 
     b, _, _ = extrinsics.shape
     h, w = image_shape
@@ -120,7 +122,7 @@ def render_cuda(
             means3D=gaussian_means[i],
             means2D=mean_gradients,
             shs=shs[i] if use_sh else None,
-            sh_objs = sh_objs,
+            sh_objs = sh_objs[i],
             colors_precomp=None if use_sh else shs[i, :, 0, :], # takes the first SH coefficient of xyz/rgb
             opacities=gaussian_opacities[i, ..., None],
             cov3D_precomp=gaussian_covariances[i, :, row, col],
@@ -128,6 +130,7 @@ def render_cuda(
         all_images.append(image)
         all_radii.append(radii)
         all_objects.append(obj)
+        
     return torch.stack(all_images), torch.stack(all_objects)
 
 
@@ -142,11 +145,12 @@ def render_cuda_orthographic(
     gaussian_means: Float[Tensor, "batch gaussian 3"],
     gaussian_covariances: Float[Tensor, "batch gaussian 3 3"],
     gaussian_sh_coefficients: Float[Tensor, "batch gaussian 3 d_sh"],
+    sh_objs, # TODO: add shape
     gaussian_opacities: Float[Tensor, "batch gaussian"],
     fov_degrees: float = 0.1,
     use_sh: bool = True,
     dump: dict | None = None,
-) -> Float[Tensor, "batch 3 height width"]:
+) -> tuple[Float[Tensor, "batch 3 height width"], Float[Tensor, "batch 16 height width"]]:
     b, _, _ = extrinsics.shape
     h, w = image_shape
     assert use_sh or gaussian_sh_coefficients.shape[-1] == 1
@@ -154,6 +158,8 @@ def render_cuda_orthographic(
     _, _, _, n = gaussian_sh_coefficients.shape
     degree = isqrt(n) - 1
     shs = rearrange(gaussian_sh_coefficients, "b g xyz n -> b g n xyz").contiguous()
+
+    sh_objs = rearrange(sh_objs, "b g xyz n -> b g n xyz").contiguous()
 
     # Create fake "orthographic" projection by moving the camera back and picking a
     # small field of view.
@@ -185,6 +191,7 @@ def render_cuda_orthographic(
 
     all_images = []
     all_radii = []
+    all_objects = []
     for i in range(b):
         # Set up a tensor for the gradients of the screen-space means.
         mean_gradients = torch.zeros_like(gaussian_means[i], requires_grad=True)
@@ -211,17 +218,19 @@ def render_cuda_orthographic(
 
         row, col = torch.triu_indices(3, 3)
 
-        image, radii = rasterizer(
+        image, radii, objs = rasterizer(
             means3D=gaussian_means[i],
             means2D=mean_gradients,
             shs=shs[i] if use_sh else None,
+            sh_objs = sh_objs[i],
             colors_precomp=None if use_sh else shs[i, :, 0, :],
             opacities=gaussian_opacities[i, ..., None],
             cov3D_precomp=gaussian_covariances[i, :, row, col],
         )
         all_images.append(image)
         all_radii.append(radii)
-    return torch.stack(all_images)
+        all_objects.append(objs)
+    return torch.stack(all_images), torch.stack(all_objects)
 
 
 DepthRenderingMode = Literal["depth", "disparity", "relative_disparity", "log"]
@@ -235,6 +244,7 @@ def render_depth_cuda(
     image_shape: tuple[int, int],
     gaussian_means: Float[Tensor, "batch gaussian 3"],
     gaussian_covariances: Float[Tensor, "batch gaussian 3 3"],
+    sh_objs, # TODO: add shape
     gaussian_opacities: Float[Tensor, "batch gaussian"],
     scale_invariant: bool = True,
     mode: DepthRenderingMode = "depth",
@@ -256,7 +266,7 @@ def render_depth_cuda(
 
     # Render using depth as color.
     b, _ = fake_color.shape
-    result = render_cuda(
+    result, _ = render_cuda(
         extrinsics,
         intrinsics,
         near,
@@ -265,6 +275,7 @@ def render_depth_cuda(
         torch.zeros((b, 3), dtype=fake_color.dtype, device=fake_color.device),
         gaussian_means,
         gaussian_covariances,
+        sh_objs,
         repeat(fake_color, "b g -> b g c ()", c=3),
         gaussian_opacities,
         scale_invariant=scale_invariant,

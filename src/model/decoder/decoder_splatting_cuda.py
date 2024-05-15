@@ -40,7 +40,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
         near: Float[Tensor, "batch view"],
         far: Float[Tensor, "batch view"],
         image_shape: tuple[int, int],
-        logits: Float[Tensor, "batch gaussian 1 class"] | None = None,
+        class_: Float[Tensor, "batch gaussian 1 class"],
         depth_mode: DepthRenderingMode | None = None,
     ) -> DecoderOutput:
         b, v, _, _ = extrinsics.shape
@@ -54,6 +54,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             repeat(gaussians.means, "b g xyz -> (b v) g xyz", v=v),
             repeat(gaussians.covariances, "b g i j -> (b v) g i j", v=v),
             repeat(gaussians.harmonics, "b g c d_sh -> (b v) g c d_sh", v=v),
+            repeat(class_, "b g c d_class -> (b v) g c d_class", v=v),
             repeat(gaussians.opacities, "b g -> (b v) g", v=v),
         )
         color = rearrange(color, "(b v) c h w -> b v c h w", b=b, v=v)
@@ -65,7 +66,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             None
             if depth_mode is None
             else self.render_depth(
-                gaussians, extrinsics, intrinsics, near, far, image_shape, depth_mode
+                gaussians, extrinsics, intrinsics, near, far, image_shape, rearrange(class_, "b v c h w -> (b v) c h w", b=b, v=v) # TODO: change shape?, depth_mode
             ),
         )
 
@@ -77,6 +78,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
         near: Float[Tensor, "batch view"],
         far: Float[Tensor, "batch view"],
         image_shape: tuple[int, int],
+        class_: Float[Tensor, "batch gaussian 1 class"],
         mode: DepthRenderingMode = "depth",
     ) -> Float[Tensor, "batch view height width"]:
         b, v, _, _ = extrinsics.shape
@@ -88,6 +90,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             image_shape,
             repeat(gaussians.means, "b g xyz -> (b v) g xyz", v=v),
             repeat(gaussians.covariances, "b g i j -> (b v) g i j", v=v),
+            class_, # TODO: add shape
             repeat(gaussians.opacities, "b g -> (b v) g", v=v),
             mode=mode,
         )
