@@ -101,9 +101,6 @@ class ModelWrapper(LightningModule):
         self.decoder = decoder
         self.data_shim = get_data_shim(self.encoder)
         self.losses = nn.ModuleList(losses)
-        num_objects = 16
-        num_classes = 200
-        self.classifier = torch.nn.Conv2d(num_objects, num_classes, kernel_size=1)
 
         # This is used for testing.
         self.benchmarker = Benchmarker()
@@ -116,13 +113,6 @@ class ModelWrapper(LightningModule):
         gaussians = self.encoder(batch["context"], self.global_step, False)
 
         class_ = gaussians.class_.detach().clone()
-
-        # MLP layer to classify the objects # TODO: move after decoder
-        # self.classifier.cuda()
-        # class_ = gaussians.class_.detach().clone()
-        # class_ = class_.permute(0, 3, 2, 1)
-        # logits = self.classifier(class_)
-        # logits = logits.permute(0, 3, 2, 1)
 
         output = self.decoder.forward(
             gaussians,
@@ -164,6 +154,8 @@ class ModelWrapper(LightningModule):
         if self.step_tracker is not None:
             self.step_tracker.set_step(self.global_step)
 
+        # torch.cuda.empty_cache() # TODO: remove if it doesn't fix memory issue
+
         return total_loss
 
     def test_step(self, batch, batch_idx):
@@ -183,13 +175,6 @@ class ModelWrapper(LightningModule):
             )
 
         class_ = gaussians.class_.detach().clone()
-
-        # MLP layer to classify the objects
-        # self.classifier.cuda()
-        # class_ = gaussians.class_.detach().clone()
-        # class_ = class_.permute(0, 3, 2, 1)
-        # logits = self.classifier(class_)
-        # logits = logits.permute(0, 3, 2, 1)
 
         with self.benchmarker.time("decoder", num_calls=v):
             color = []
@@ -253,13 +238,6 @@ class ModelWrapper(LightningModule):
         )
 
         class_ = gaussians_probabilistic.class_.detach().clone()
-
-        # MLP layer to classify the objects
-        # self.classifier.cuda()
-        # class_ = gaussians_probabilistic.class_.detach().clone()
-        # class_ = class_.permute(0, 3, 2, 1)
-        # logits_probabilistic = self.classifier(class_)
-        # logits_probabilistic = logits_probabilistic.permute(0, 3, 2, 1)
         
         output_probabilistic = self.decoder.forward(
             gaussians_probabilistic,
@@ -278,13 +256,6 @@ class ModelWrapper(LightningModule):
         )
 
         class_ = gaussians_deterministic.class_.detach().clone()
-
-        # MLP layer to classify the objects
-        # self.classifier.cuda()
-        # class_ = gaussians_deterministic.class_.detach().clone()
-        # class_ = class_.permute(0, 3, 2, 1)
-        # logits_deterministic = self.classifier(class_)
-        # logits_deterministic = logits_deterministic.permute(0, 3, 2, 1)
 
         output_deterministic = self.decoder.forward(
             gaussians_deterministic,

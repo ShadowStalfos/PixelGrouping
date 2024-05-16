@@ -178,5 +178,7 @@ table.tex
 
 DataFor3DGS/
 
-.gitignore
 venvOld/
+
+loaded_imgs_objs/
+.gitignore

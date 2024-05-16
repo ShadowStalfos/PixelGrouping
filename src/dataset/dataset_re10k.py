@@ -213,13 +213,13 @@ class DatasetRE10k(IterableDataset):
                 example = apply_crop_shim(example, tuple(self.cfg.image_shape), imgs_nearest_neighbors=False)
 
                 # Save images and masks after transformation
-                self.save_image_and_mask(example, 'context', 'after', object_masks)
-                self.save_image_and_mask(example, 'target', 'after', object_masks)
+                # self.save_image_and_mask(example, 'context', 'after', object_masks)
+                # self.save_image_and_mask(example, 'target', 'after', object_masks)
 
-                self.save_id += 1
+                # self.save_id += 1
 
-                if self.save_id == 20:
-                    raise Exception("Processing limit reached at index 1000.")
+                # if self.save_id == 20:
+                #     raise Exception("Processing limit reached at index 1000.")
 
                 yield example
 

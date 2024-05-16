@@ -83,11 +83,13 @@ def train(cfg_dict: DictConfig):
     # Prepare the checkpoint for loading.
     checkpoint_path = update_checkpoint_path(cfg.checkpointing.load, cfg.wandb)
 
+    print(checkpoint_path)
+
     # This allows the current step to be shared with the data loader processes.
     step_tracker = StepTracker()
 
     trainer = Trainer(
-        max_epochs=-1,
+        max_epochs=10000,
         accelerator="gpu",
         logger=logger,
         devices="auto",

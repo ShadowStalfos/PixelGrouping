@@ -31,6 +31,9 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
             torch.tensor(dataset_cfg.background_color, dtype=torch.float32),
             persistent=False,
         )
+        num_objects = 16
+        num_classes = 200
+        self.classifier = torch.nn.Conv2d(num_objects, num_classes, kernel_size=1)
 
     def forward(
         self,
@@ -62,9 +65,14 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
         color = rearrange(color, "(b v) c h w -> b v c h w", b=b, v=v)
         class_ = rearrange(class_, "(b v) c h w -> b v c h w", b=b, v=v)
 
+        # MLP layer to classify the objects
+        self.classifier.cuda()
+        logits = class_.detach().clone().squeeze(0)
+        logits = self.classifier(logits).unsqueeze(0)
+
         return DecoderOutput(
             color,
-            class_,
+            logits,
             None
             if depth_mode is None
             else self.render_depth(
