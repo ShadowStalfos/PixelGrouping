@@ -2,6 +2,7 @@
 
 This is the code for **Two photos to find them all: PixelGrouping** by Tim van Gelder, Leon Hulshof,	Thomas Komen, Jerrijn Mandjes and Max de Redelijkheid.
 In this method, pixelSplat ([code](https://github.com/dcharatan/pixelsplat)) and Gaussian Grouping ([code](https://github.com/lkeab/gaussian-grouping)) are combined to produce an algorithm capable of 3D object segmentation as proposed in Gaussian Grouping, while retaining the improvements upon the 3D scene reconstruction as proposed in pixelSplat.
+![Results_PixelGrouping](https://github.com/ShadowStalfos/PixelGrouping/assets/40166524/0b699c6d-61e3-434c-a61e-55d6ca8f97e7)
 
 ## Codebase
 
