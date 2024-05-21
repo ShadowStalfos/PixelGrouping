@@ -19,6 +19,7 @@ source venv/bin/activate
 # Install these first! Also, make sure you have python3.11-dev installed if using Ubuntu.
 pip install wheel torch torchvision torchaudio
 pip install -r requirements.txt
+pip install submodules/diff-gaussian-rasterization
 ```
 
 If your system does not use CUDA 12.1 by default, see the troubleshooting tips below.
