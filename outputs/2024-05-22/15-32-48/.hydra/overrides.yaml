@@ -1,0 +1,4 @@
+- +experiment=DataFor3DGS
+- mode=train
+- data_loader.train.batch_size=4
+- trainer.val_check_interval=1

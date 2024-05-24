@@ -1,0 +1,3 @@
+- +experiment=DataFor3DGS
+- mode=train
+- data_loader.train.batch_size=2
